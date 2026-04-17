@@ -6,6 +6,11 @@ import Btnupload from './components/Btnupload.jsx';
 import { useNavigate } from 'react-router-dom';
 import SelectRoom from "./components/SelectRoom.jsx";
 import SelectBuilding from "./components/SelectBuilding.jsx";
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 export default function Report01() {
     const navigate = useNavigate();
@@ -19,17 +24,58 @@ export default function Report01() {
     const [building, setBuilding] = useState('');
     const [room, setRoom] = useState('');
     const [locationDescription, setLocationDescription] = useState('');
+    const [position, setPosition] = useState(null);
+
+    const UTCC_CENTER = [13.7796, 100.5603];
 
     if (!currentUser) {
         alert('กรุณา login ก่อน');
         navigate('/');
         return;
     }
-
+    const categoryMap = {
+        AIR_CONDITIONER: 'AIR_CONDITIONER',
+        ELECTRICAL_PROJECTOR: 'ELECTRICAL',
+        ELECTRICAL_LIGHT: 'ELECTRICAL',
+        WATER_PIPE: 'WATER',
+        WATER_SINK: 'WATER',
+        WATER_TOILET: 'WATER',
+        FURNITURE: 'FURNITURE',
+        NETWORK: 'NETWORK',
+        CLEANING: 'CLEANING',
+        OTHER: 'OTHER',
+    };
+    const categoryLabelMap = {
+        AIR_CONDITIONER: 'เครื่องปรับอากาศ',
+        ELECTRICAL_PROJECTOR: 'โปรเจ็คเตอร์',
+        ELECTRICAL_LIGHT: 'หลอดไฟ',
+        WATER_PIPE: 'ท่อน้ำ',
+        WATER_SINK: 'อ่างล้างมือ',
+        WATER_TOILET: 'ชักโครก',
+        FURNITURE: 'โต๊ะเล็กเก้าอี้',
+        NETWORK: 'คอมพิวเตอร์',
+        CLEANING: 'งานทำความสะอาด',
+        OTHER: 'อื่น ๆ',
+    };
     const handleBuildingChange = (value) => {
         setBuilding(value);
         setRoom('');
     };
+
+    function LocationPicker({ setPosition }) {
+        useMapEvents({
+            click(e) {
+                setPosition(e.latlng);
+            },
+        });
+        return null;
+    }
+    delete L.Icon.Default.prototype._getIconUrl;
+
+    L.Icon.Default.mergeOptions({
+        iconUrl: markerIcon,
+        shadowUrl: markerShadow,
+    });
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files || []);
@@ -67,13 +113,15 @@ export default function Report01() {
                 },
                 body: JSON.stringify({
                     title: 'แจ้งซ่อม',
-                    description: description,
-                    category: category || null,
+                    description: `${categoryLabelMap[category] || ''} ${description || ''}`.trim(),
+                    category: categoryMap[category] || null,
                     createdByUserId: currentUser.id,
                     building: building,
                     floor: '-',
                     room: room,
-                    locationDescription: locationDescription || '-'
+                    locationDescription: position
+                        ? `${description} | พิกัด: ${position.lat}, ${position.lng}`
+                        : description
                 })
             });
 
@@ -132,18 +180,46 @@ export default function Report01() {
 
                     <div className="mb-5">
                         <h3 className="font-bold text-gray-900 mb-3 text-[16px]">แจ้งเรื่องเครื่องใช้สาธารณูปโภคชำรุด</h3>
-                        <Select value={category} onChange={setCategory} />
+                        <Select category={category} setCategory={setCategory} />
+                    </div>
+                    <div className="mb-5">
+                        <h3 className="font-bold text-gray-900 mb-3 text-[16px]">ปักหมุด</h3>
+
+                        <MapContainer
+                            center={UTCC_CENTER}
+                            zoom={17}
+                            style={{ height: '300px', width: '100%' }}
+                        >
+                            <TileLayer
+                                attribution="&copy; OpenStreetMap"
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+
+                            <LocationPicker setPosition={setPosition} />
+
+                            {position && <Marker position={position} />}
+                        </MapContainer>
+
+                        {position && (
+                            <p>
+                                พิกัด: {position.lat}, {position.lng}
+                            </p>
+                        )}
                     </div>
 
-                    <div className="mb-5">
-                        <h3 className="font-bold text-gray-900 mb-3 text-[16px]">เลือกอาคาร</h3>
-                        <SelectBuilding value={building} onChange={handleBuildingChange} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="mb-5">
+                            <h3 className="font-bold text-gray-900 mb-3 text-[16px]">เลือกอาคาร</h3>
+                            <SelectBuilding value={building} onChange={handleBuildingChange} />
+                        </div>
+
+                        <div className="mb-5">
+                            <h3 className="font-bold text-gray-900 mb-3 text-[16px]">เลือกห้อง</h3>
+                            <SelectRoom building={building} value={room} onChange={setRoom} />
+                        </div>
                     </div>
 
-                    <div className="mb-5">
-                        <h3 className="font-bold text-gray-900 mb-3 text-[16px]">เลือกห้อง</h3>
-                        <SelectRoom building={building} value={room} onChange={setRoom} />
-                    </div>
+
                     <div className="mb-5">
                         <h3 className="font-bold text-gray-900 mb-3 text-[16px]">แจ้งรายละเอียดเรื่อง</h3>
                         <textarea

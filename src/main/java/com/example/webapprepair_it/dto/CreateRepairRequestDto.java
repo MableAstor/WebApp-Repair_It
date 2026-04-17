@@ -3,6 +3,8 @@ package com.example.webapprepair_it.dto;
 import com.example.webapprepair_it.entity.RepairCategory;
 import jakarta.validation.constraints.NotBlank;
 
+import java.math.BigDecimal;
+
 public class CreateRepairRequestDto {
 
     @NotBlank
@@ -19,6 +21,9 @@ public class CreateRepairRequestDto {
     private String locationDescription;
 
     private Long createdByUserId;
+
+    private BigDecimal latitude;
+    private BigDecimal longitude;
 
     public String getTitle() {
         return title;
@@ -82,5 +87,21 @@ public class CreateRepairRequestDto {
 
     public void setCreatedByUserId(Long createdByUserId) {
         this.createdByUserId = createdByUserId;
+    }
+
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(BigDecimal latitude) {
+        this.latitude = latitude;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(BigDecimal longitude) {
+        this.longitude = longitude;
     }
 }

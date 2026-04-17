@@ -85,6 +85,9 @@ public class RepairRequestService {
             request.setCategory(RepairCategory.OTHER);
         }
 
+        request.setLatitude(dto.getLatitude());
+        request.setLongitude(dto.getLongitude());
+
         return repairRequestRepository.save(request);
     }
 

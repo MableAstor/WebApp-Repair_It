@@ -1,5 +1,7 @@
 package com.example.webapprepair_it.entity;
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -67,6 +69,12 @@ public class RepairRequest {
     public void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal latitude;
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal longitude;
 
     public Long getId() {
         return id;
@@ -173,5 +181,21 @@ public class RepairRequest {
 
     public void setImages(List<RepairImage> images) {
         this.images = images;
+    }
+
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(BigDecimal latitude) {
+        this.latitude = latitude;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(BigDecimal longitude) {
+        this.longitude = longitude;
     }
 }
