@@ -4,6 +4,8 @@ import Select from './components/Select.jsx';
 import Btncamera from './components/Btncamera.jsx';
 import Btnupload from './components/Btnupload.jsx';
 import { useNavigate } from 'react-router-dom';
+import SelectRoom from "./components/SelectRoom.jsx";
+import SelectBuilding from "./components/SelectBuilding.jsx";
 
 export default function Report01() {
     const navigate = useNavigate();
@@ -14,12 +16,20 @@ export default function Report01() {
     const [previewUrls, setPreviewUrls] = useState([]);
     const [loading, setLoading] = useState(false);
     const currentUser = JSON.parse(localStorage.getItem('user'));
+    const [building, setBuilding] = useState('');
+    const [room, setRoom] = useState('');
+    const [locationDescription, setLocationDescription] = useState('');
 
     if (!currentUser) {
         alert('กรุณา login ก่อน');
         navigate('/');
         return;
     }
+
+    const handleBuildingChange = (value) => {
+        setBuilding(value);
+        setRoom('');
+    };
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files || []);
@@ -33,33 +43,77 @@ export default function Report01() {
     };
 
     const handleSubmit = async () => {
-        if (imageFiles.length < 2) {
-            alert('กรุณาแนบรูปอย่างน้อย 2 รูป');
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+
+        if (!currentUser) {
+            alert('กรุณา login ก่อน');
+            navigate('/');
             return;
         }
 
-        const formData = new FormData();
-        formData.append('category', category);
-        formData.append('description', description);
-
-        imageFiles.forEach((file) => {
-            formData.append('images', file);
-        });
+        if (!description.trim() && !locationDescription.trim()) {
+            alert('กรุณากรอกรายละเอียด');
+            return;
+        }
 
         try {
-            const res = await fetch('http://localhost:8080/api/repair-requests', {
+            setLoading(true);
+
+            // STEP 1: create request ด้วย JSON
+            const createRes = await fetch('http://localhost:8080/api/repair-requests', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: 'แจ้งซ่อม',
+                    description: description,
+                    category: category || null,
+                    createdByUserId: currentUser.id,
+                    building: building,
+                    floor: '-',
+                    room: room,
+                    locationDescription: locationDescription || '-'
+                })
             });
 
-            const data = await res.json();
-            console.log(data);
+            if (!createRes.ok) {
+                const errorText = await createRes.text();
+                throw new Error(errorText || 'สร้างรายการแจ้งซ่อมไม่สำเร็จ');
+            }
+
+            const createdData = await createRes.json();
+            const requestId = createdData.id;
+
+            // STEP 2: upload รูป ถ้ามี
+            if (imageFiles.length > 0) {
+                const formData = new FormData();
+
+                imageFiles.forEach((file) => {
+                    formData.append('files', file);
+                });
+
+                const uploadRes = await fetch(
+                    `http://localhost:8080/api/repair-requests/${requestId}/upload-images`,
+                    {
+                        method: 'POST',
+                        body: formData
+                    }
+                );
+
+                if (!uploadRes.ok) {
+                    const errorText = await uploadRes.text();
+                    throw new Error(errorText || 'อัปโหลดรูปไม่สำเร็จ');
+                }
+            }
 
             alert('ส่งเรื่องสำเร็จ');
             navigate('/submit');
         } catch (err) {
             console.error(err);
-            alert('ส่งไม่สำเร็จ');
+            alert(err.message || 'ส่งเรื่องไม่สำเร็จ');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -82,11 +136,20 @@ export default function Report01() {
                     </div>
 
                     <div className="mb-5">
+                        <h3 className="font-bold text-gray-900 mb-3 text-[16px]">เลือกอาคาร</h3>
+                        <SelectBuilding value={building} onChange={handleBuildingChange} />
+                    </div>
+
+                    <div className="mb-5">
+                        <h3 className="font-bold text-gray-900 mb-3 text-[16px]">เลือกห้อง</h3>
+                        <SelectRoom building={building} value={room} onChange={setRoom} />
+                    </div>
+                    <div className="mb-5">
                         <h3 className="font-bold text-gray-900 mb-3 text-[16px]">แจ้งรายละเอียดเรื่อง</h3>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="เช่น ห้อง 501 แอร์พังค่ะ"
+                            placeholder="เช่น ประตูพัง หน้าห้อง 2501"
                             className="w-full h-32 p-5 rounded-3xl bg-white border-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7670AC] resize-none text-sm text-gray-700 placeholder-gray-400"
                         ></textarea>
                     </div>
