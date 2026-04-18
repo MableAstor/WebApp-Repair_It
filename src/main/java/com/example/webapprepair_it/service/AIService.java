@@ -1,6 +1,7 @@
 package com.example.webapprepair_it.service;
 
 import com.example.webapprepair_it.dto.AIResponse;
+import com.example.webapprepair_it.entity.RepairCategory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -10,6 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import static com.example.webapprepair_it.entity.RepairCategory.*;
 
 @Service
 public class AIService {
@@ -23,15 +25,21 @@ public class AIService {
         this.webClient = webClientBuilder.baseUrl("https://api.openai.com/v1").build();
     }
 
-    public AIResponse analyze(String text) {
+    public AIResponse analyze(String text, RepairCategory categoryFromUser) {
         String category = autoTag(text);
-        String severity = calculateSeverity(text);
+        RepairCategory mainCategory = mapToMainCategory(categoryFromUser);
+        String severity = calculateSeverity(text, mainCategory);
 
         if ("อื่นๆ".equals(category)) {
             category = callAI(text);
         }
 
         return new AIResponse(category, severity);
+    }
+
+    private RepairCategory mapToMainCategory(RepairCategory category) {
+        if (category == null) return RepairCategory.OTHER;
+        return category;
     }
 
     public String autoTag(String text) {
@@ -54,7 +62,13 @@ public class AIService {
         ));
 
         dict.put("หลอดไฟ", Map.of(
-                "ไฟดับ", 3, "มืด", 2, "ไฟ", 1
+                "ไฟดับ", 3,
+                "ไฟเสีย", 3,
+                "หลอด", 2,
+                "ไฟ", 1,
+                "แตก", 2,
+                "ระเบิด", 3,
+                "มืด", 2
         ));
 
         String bestCategory = "อื่นๆ";
@@ -75,38 +89,138 @@ public class AIService {
             }
         }
 
-        if (maxScore < 2) return "อื่นๆ";
+        if (maxScore < 1) return "อื่นๆ";
 
         return bestCategory;
     }
 
-    public String calculateSeverity(String text) {
+    public String calculateSeverity(String text, RepairCategory category) {
         if (text == null) return "LOW";
+        if (category == null) category = RepairCategory.OTHER;
 
         text = normalize(text);
 
         int score = 0;
+        Map<String, Integer> severityMap = new HashMap<>();
 
-        Map<String, Integer> severityMap = Map.ofEntries(
-                Map.entry("ใช้ไม่ได้", 3),
-                Map.entry("ใช้งานไม่ได้", 3),
-                Map.entry("พัง", 3),
-                Map.entry("เสีย", 3),
-                Map.entry("ด่วน", 3),
-                Map.entry("อันตราย", 4),
-                Map.entry("หัก", 2),
-                Map.entry("โยก", 2),
-                Map.entry("รั่ว", 2),
-                Map.entry("ไม่เย็น", 2),
-                Map.entry("ร้อนมาก", 2),
-                Map.entry("ตัน", 3)
-        );
+        switch (category) {
+            case ELECTRICAL -> {
+                severityMap.put("ไฟดับ", 3);
+                severityMap.put("ไฟไม่ติด", 3);
+                severityMap.put("ติดๆดับๆ", 2);
+                severityMap.put("หลอดไฟแตก", 3);
+                severityMap.put("หลอดแตก", 2);
+                severityMap.put("แตก", 2);
+                severityMap.put("ระเบิด", 4);
+                severityMap.put("แตกกระเด็น", 4);
+                severityMap.put("ช็อต", 4);
+                severityMap.put("ไฟช็อต", 4);
+                severityMap.put("ประกายไฟ", 4);
+                severityMap.put("ไฟดูด", 5);
+                severityMap.put("ไฟรั่ว", 4);
+                severityMap.put("ควัน", 4);
+                severityMap.put("ไหม้", 4);
+                severityMap.put("กลิ่นไหม้", 4);
+                severityMap.put("สายไฟขาด", 3);
+                severityMap.put("สายไฟหลุด", 2);
+                severityMap.put("อันตราย", 5);
+                severityMap.put("ใช้งานไม่ได้", 3);
+                severityMap.put("เสีย", 2);
+                severityMap.put("พัง", 2);
+                severityMap.put("แรงมาก", 2);
+                severityMap.put("อันตรายมาก", 3);
+                severityMap.put("เสี่ยง", 3);
+                severityMap.put("น่ากลัว", 2);
+                severityMap.put("ระเบิดแรง", 4);
+            }
+
+            case AIR_CONDITIONER -> {
+                severityMap.put("ไม่เย็น", 3);
+                severityMap.put("แอร์เสีย", 3);
+                severityMap.put("แอร์พัง", 3);
+                severityMap.put("ไม่ทำงาน", 3);
+                severityMap.put("เปิดไม่ติด", 3);
+                severityMap.put("ใช้งานไม่ได้", 3);
+                severityMap.put("น้ำหยด", 2);
+                severityMap.put("น้ำรั่ว", 2);
+                severityMap.put("ร้อนมาก", 2);
+                severityMap.put("เสียงดัง", 1);
+                severityMap.put("กลิ่นเหม็น", 1);
+            }
+
+            case WATER -> {
+                severityMap.put("น้ำรั่ว", 3);
+                severityMap.put("รั่ว", 2);
+                severityMap.put("ท่อแตก", 4);
+                severityMap.put("น้ำซึม", 2);
+                severityMap.put("น้ำไหลไม่หยุด", 3);
+                severityMap.put("น้ำไม่ไหล", 3);
+                severityMap.put("น้ำล้น", 4);
+                severityMap.put("น้ำทะลัก", 4);
+                severityMap.put("ตัน", 3);
+                severityMap.put("อุดตัน", 3);
+                severityMap.put("กดไม่ลง", 3);
+                severityMap.put("ใช้งานไม่ได้", 3);
+                severityMap.put("กลิ่นเหม็น", 1);
+            }
+
+            case FURNITURE -> {
+                severityMap.put("หัก", 3);
+                severityMap.put("โยก", 2);
+                severityMap.put("หลวม", 2);
+                severityMap.put("พัง", 3);
+                severityMap.put("แตก", 2);
+                severityMap.put("ไม่มั่นคง", 3);
+                severityMap.put("เอียง", 2);
+                severityMap.put("ใช้งานไม่ได้", 3);
+                severityMap.put("ขาเก้าอี้เสีย", 3);
+            }
+
+            case NETWORK -> {
+                severityMap.put("เน็ตช้า", 1);
+                severityMap.put("เน็ตหลุด", 2);
+                severityMap.put("เชื่อมต่อไม่ได้", 3);
+                severityMap.put("wifiใช้ไม่ได้", 3);
+                severityMap.put("ไม่มีสัญญาณ", 3);
+                severityMap.put("เครื่องค้าง", 2);
+                severityMap.put("เปิดไม่ติด", 3);
+                severityMap.put("เข้าไม่ได้", 2);
+                severityMap.put("ใช้งานไม่ได้", 3);
+            }
+
+            case CLEANING -> {
+                severityMap.put("สกปรก", 1);
+                severityMap.put("มีขยะ", 1);
+                severityMap.put("มีกลิ่น", 1);
+                severityMap.put("เหม็น", 1);
+                severityMap.put("มีคราบ", 1);
+                severityMap.put("เลอะ", 1);
+                severityMap.put("ไม่ได้ทำความสะอาด", 2);
+                severityMap.put("น้ำขัง", 2);
+            }
+
+            case OTHER -> {
+                severityMap.put("เสีย", 2);
+                severityMap.put("พัง", 2);
+                severityMap.put("ใช้งานไม่ได้", 3);
+                severityMap.put("อันตราย", 4);
+                severityMap.put("ด่วน", 3);
+                severityMap.put("แตก", 2);
+                severityMap.put("รั่ว", 2);
+            }
+        }
+
+        if (text.contains("ระเบิด") || text.contains("ไฟดูด") || text.contains("ช็อต")) {
+            score += 2;
+        }
 
         for (String key : severityMap.keySet()) {
-            if (text.contains(key)) {
+            String normalizedKey = normalize(key);
+            if (text.contains(normalizedKey)) {
                 score += severityMap.get(key);
             }
         }
+
 
         if (score >= 5) return "HIGH";
         if (score >= 3) return "MEDIUM";

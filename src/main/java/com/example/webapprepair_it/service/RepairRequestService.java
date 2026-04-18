@@ -48,7 +48,7 @@ public class RepairRequestService {
         location.setRoom(dto.getRoom());
         location.setDescription(dto.getLocationDescription());
 
-        AIResponse aiResult = aiService.analyze(dto.getDescription());
+        AIResponse aiResult = aiService.analyze(dto.getDescription(), dto.getCategory());
 
         RepairRequest request = new RepairRequest();
         request.setRequestCode("REP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
@@ -71,19 +71,8 @@ public class RepairRequestService {
             request.setAiSeverityScore(1);
         }
 
-        String aiCategory = aiResult.getCategory();
-
-        if ("เครื่องปรับอากาศ".equals(aiCategory)) {
-            request.setCategory(RepairCategory.ELECTRICAL); // หรือ AIR_CONDITIONER ถ้ามี
-        } else if ("หลอดไฟ".equals(aiCategory)) {
-            request.setCategory(RepairCategory.ELECTRICAL);
-        } else if ("ชักโครก".equals(aiCategory)) {
-            request.setCategory(RepairCategory.OTHER);
-        } else if ("เก้าอี้".equals(aiCategory)) {
-            request.setCategory(RepairCategory.FURNITURE);
-        } else {
-            request.setCategory(RepairCategory.OTHER);
-        }
+        request.setCategory(dto.getCategory());
+        request.setAiTag(aiResult.getCategory());
 
         request.setLatitude(dto.getLatitude());
         request.setLongitude(dto.getLongitude());

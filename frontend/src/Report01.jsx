@@ -91,6 +91,10 @@ export default function Report01() {
     const handleSubmit = async () => {
         const currentUser = JSON.parse(localStorage.getItem('user'));
 
+        console.log('category state =', category);
+        console.log('mapped category =', categoryMap[category]);
+        console.log('description =', description);
+
         if (!currentUser) {
             alert('กรุณา login ก่อน');
             navigate('/');
