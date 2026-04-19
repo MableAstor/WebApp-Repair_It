@@ -87,6 +87,14 @@ export default function Report01() {
         const updatedPreviews = updatedFiles.map(file => URL.createObjectURL(file));
         setPreviewUrls(updatedPreviews);
     };
+    // ฟังก์ชันสำหรับลบรูปภาพ
+    const handleRemoveImage = (indexToRemove) => {
+        // 1. ลบไฟล์จริงออกจาก State imageFiles
+        setImageFiles((prevFiles) => prevFiles.filter((_, index) => index !== indexToRemove));
+
+        // 2. ลบ URL พรีวิวออกจาก State previewUrls
+        setPreviewUrls((prevUrls) => prevUrls.filter((_, index) => index !== indexToRemove));
+    };
 
     const handleSubmit = async () => {
         const currentUser = JSON.parse(localStorage.getItem('user'));
@@ -242,16 +250,25 @@ export default function Report01() {
                             <Btnupload onChange={handleFileChange} />
                         </div>
 
-                        <div className="w-full h-60 bg-white rounded-2xl shadow-sm flex items-center justify-center overflow-hidden">
+                        <div className="w-full h-64 bg-white rounded-3xl shadow-sm p-4 overflow-y-auto relative border border-white/50">
                             {previewUrls.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-3">
+                                // กล่อง Grid สำหรับจัดเรียงรูปภาพ 2 คอลัมน์
+                                <div className="grid grid-cols-2 gap-3 h-max">
                                     {previewUrls.map((url, index) => (
-                                        <img
-                                            key={index}
-                                            src={url}
-                                            alt={`preview-${index}`}
-                                            className="w-full h-32 object-cover rounded-2xl"
-                                        />
+                                        <div key={index} className="relative group w-full h-28">
+                                            <img
+                                                src={url}
+                                                alt={`preview-${index}`}
+                                                className="w-full h-full object-cover rounded-xl shadow-sm border border-gray-100"
+                                            />
+                                            <button
+                                                type="button" // ใส่ type="button" เพื่อป้องกันไม่ให้ไปชนกับปุ่ม Submit
+                                                onClick={() => handleRemoveImage(index)} // เรียกใช้ฟังก์ชันลบ พร้อมส่งตำแหน่งรูปไป
+                                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-[12px] font-bold opacity-80 hover:opacity-100 shadow-md transition-opacity cursor-pointer"
+                                            >
+                                               ✕
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
