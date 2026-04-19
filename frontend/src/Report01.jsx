@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from './components/Navbar.jsx';
 import Select from './components/Select.jsx';
 import Btncamera from './components/Btncamera.jsx';
@@ -6,7 +6,7 @@ import Btnupload from './components/Btnupload.jsx';
 import { useNavigate } from 'react-router-dom';
 import SelectRoom from "./components/SelectRoom.jsx";
 import SelectBuilding from "./components/SelectBuilding.jsx";
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -24,9 +24,11 @@ export default function Report01() {
     const [building, setBuilding] = useState('');
     const [room, setRoom] = useState('');
     const [locationDescription, setLocationDescription] = useState('');
-    const [position, setPosition] = useState(null);
+    const [position, setPosition] = useState({
+        lat: 13.7796,
+        lng: 100.5603,
+    });
 
-    const UTCC_CENTER = [13.7796, 100.5603];
 
     if (!currentUser) {
         alert('กรุณา login ก่อน');
@@ -57,6 +59,26 @@ export default function Report01() {
         CLEANING: 'งานทำความสะอาด',
         OTHER: 'อื่น ๆ',
     };
+    const BUILDING_COORDS = {
+        building1: { lat: 13.7792, lng: 100.5600 },
+        building2: { lat: 13.7788, lng: 100.5579 },
+        building3: { lat: 13.7785, lng: 100.5585 },
+        building5: { lat: 13.7808, lng: 100.5605 },
+        building6: { lat: 13.7782, lng: 100.5576 },
+        building7: { lat: 13.7794, lng: 100.5610 },
+        building10: { lat: 13.7779, lng: 100.5588 },
+        building24: { lat: 13.7787, lng: 100.5592 },
+    };
+    function ChangeMapView({ center, zoom = 18 }) {
+        const map = useMap();
+        map.setView(center, zoom);
+        return null;
+    }
+    useEffect(() => {
+        if (building && BUILDING_COORDS[building]) {
+            setPosition(BUILDING_COORDS[building]);
+        }
+    }, [building]);
     const handleBuildingChange = (value) => {
         setBuilding(value);
         setRoom('');
@@ -98,10 +120,6 @@ export default function Report01() {
 
     const handleSubmit = async () => {
         const currentUser = JSON.parse(localStorage.getItem('user'));
-
-        console.log('category state =', category);
-        console.log('mapped category =', categoryMap[category]);
-        console.log('description =', description);
 
         if (!currentUser) {
             alert('กรุณา login ก่อน');
@@ -198,7 +216,7 @@ export default function Report01() {
                         <h3 className="font-bold text-gray-900 mb-3 text-[16px]">ปักหมุด</h3>
 
                         <MapContainer
-                            center={UTCC_CENTER}
+                            center={[position.lat, position.lng]}
                             zoom={17}
                             style={{ height: '300px', width: '100%' }}
                         >
@@ -207,6 +225,7 @@ export default function Report01() {
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             />
 
+                            <ChangeMapView center={[position.lat, position.lng]} zoom={18} />
                             <LocationPicker setPosition={setPosition} />
 
                             {position && <Marker position={position} />}
