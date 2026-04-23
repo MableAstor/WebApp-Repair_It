@@ -80,4 +80,14 @@ public class RepairRequestController {
     public DashboardSummaryDto getSummary() {
         return repairRequestService.getDashboardSummary();
     }
+
+    @GetMapping("/ai-queue")
+    public List<RepairRequest> getAIQueue() {
+        return repairRequestService.getAIQueue();
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteRepairRequest(@PathVariable Long id) {
+        repairRequestService.deleteCompletedRequest(id);
+    }
 }

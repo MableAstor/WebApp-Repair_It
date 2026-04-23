@@ -1,4 +1,5 @@
 package com.example.webapprepair_it.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -16,6 +17,7 @@ public class RepairImage {
 
     @ManyToOne
     @JoinColumn(name = "repair_request_id")
+    @JsonIgnore
     private RepairRequest repairRequest;
 
     public RepairImage() {

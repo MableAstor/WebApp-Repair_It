@@ -9,6 +9,7 @@ import com.example.webapprepair_it.repository.RepairStatusLogRepository;
 import com.example.webapprepair_it.repository.UserRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -238,5 +239,46 @@ public class RepairRequestService {
                 getLatestRequests(),
                 getTechnicianWorkloads()
         );
+    }
+
+    public List<RepairRequest> getAIQueue() {
+        List<RepairRequest> requests = repairRequestRepository.findAll();
+
+        return requests.stream()
+                .sorted((a, b) -> {
+                    int scoreA = calculateScore(a);
+                    int scoreB = calculateScore(b);
+                    return Integer.compare(scoreB, scoreA);
+                })
+                .toList();
+    }
+
+    private int calculateScore(RepairRequest r) {
+        int score = 0;
+
+        if (r.getStatus() == RequestStatus.IN_PROGRESS) score += 100;
+        else if (r.getStatus() == RequestStatus.PENDING) score += 60;
+        else if (r.getStatus() == RequestStatus.COMPLETED) score += 0;
+        else if (r.getStatus() == RequestStatus.REJECTED) score -= 100;
+
+        if (r.getAiSeverityScore() != null) {
+            score += r.getAiSeverityScore() * 50;
+        }
+
+        return score;
+    }
+
+    @Transactional
+    public void deleteCompletedRequest(Long id) {
+        RepairRequest request = repairRequestRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Repair request not found"));
+
+        if (request.getStatus() != RequestStatus.COMPLETED) {
+            throw new RuntimeException("Can delete only completed requests");
+        }
+
+        repairStatusLogRepository.deleteLogsByRepairRequestId(id);
+        repairImageRepository.deleteByRepairRequestId(id);
+        repairRequestRepository.delete(request);
     }
 }

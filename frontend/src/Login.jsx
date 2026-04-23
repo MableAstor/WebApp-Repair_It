@@ -39,13 +39,17 @@ const Login = () => {
 
             localStorage.setItem('user', JSON.stringify(data));
 
-            alert('เข้าสู่ระบบสำเร็จ');
-            navigate('/home');
+
+            if (data.role === 'TECHNICIAN') {
+                navigate('/pending')
+            } else if (data.role === 'ADMIN') {
+                navigate('/home')
+            } else {
+                navigate('/home')
+            }
         } catch (error) {
-            console.error(error);
-            alert(error.message || 'เข้าสู่ระบบไม่สำเร็จ');
-        } finally {
-            setLoading(false);
+            console.error(error)
+            alert('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
         }
     };
 

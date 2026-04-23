@@ -3,6 +3,7 @@ import React from "react";
 export default function ProcessCard({ data, onClickDetail, onMarkFinished }) {
   return (
     <div className="bg-white rounded-3xl p-6 mb-5 shadow-sm w-full flex flex-col">
+        <div className="bg-[#F3F3F6] rounded-2xl p-4">
       {/* สถานที่ */}
       <div className="flex items-center gap-2 text-gray-900 font-bold text-lg mb-2">
         <svg
@@ -19,15 +20,21 @@ export default function ProcessCard({ data, onClickDetail, onMarkFinished }) {
       </div>
 
       {/* หัวข้อปัญหา */}
-      <h2 className="text-black font-bold text-3xl mb-2">{data.title}</h2>
-
+      <h2 className="text-black font-bold text-2xl mb-1">{data.title}</h2>
+        <p className="mt-2 text-sm md:text-base font-medium text-[#1d1d1d]">
+            {data.description || 'ไม่มีรายละเอียด'}
+        </p>
       {/* ระดับความเร่งด่วน */}
-      <p className="text-gray-800 font-medium text-[16px] mb-6">
-        ความเร่งด่วน: <span className="text-red-600">{data.urgency}</span>
-      </p>
+        <div className="flex flex-wrap gap-2 mt-3">
+            <p className="w-40 text-sm bg-[#FFE8E8] text-[#FF4D4F] px-1 py-1 rounded-full text-center">
+                ความเร่งด่วน: <span>{data.urgency}</span>
+            </p>
+        </div>
+        </div>
+
 
       {/* กลุ่มปุ่ม 2 ปุ่ม */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 mt-3">
         <button
           onClick={() => onClickDetail(data.id)}
           className="w-full bg-[#433D8B] text-white py-3 rounded-2xl font-bold text-[16px] hover:bg-[#342f6d] transition-colors shadow-sm active:scale-95"
