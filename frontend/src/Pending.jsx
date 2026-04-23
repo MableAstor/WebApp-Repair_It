@@ -43,7 +43,7 @@ export default function Pending() {
               title: item.category || "ไม่ระบุหมวด",   // 👈 เปลี่ยนตรงนี้
               description: item.description || "แจ้งซ่อม", // 👈 เก็บ description ไว้
               location: item.location
-                  ? `${item.location.building || ""} ชั้น ${item.location.floor || ""} ห้อง ${item.location.room || ""}`.trim()
+                  ? `อาคาร ${(item.location.building).replace(/building/i,"") || ""} ห้อง ${item.location.room || ""}`.trim()
                   : "ไม่ระบุสถานที่",
               urgency: item.severity || "ไม่ระบุ",
             }));

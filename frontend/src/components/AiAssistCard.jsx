@@ -17,7 +17,7 @@ export default function AiAssistCard({ item }) {
         <div className="bg-white rounded-[28px] p-4 shadow-[0_8px_20px_rgba(124,92,160,0.12)]">
             <div className="bg-[#F3F3F6] rounded-2xl p-4">
                 <p className="font-semibold text-sm md:text-base text-[#1d1d1d] leading-relaxed">
-                    อาคาร {building} ชั้น {floor} ห้อง {room} : {getStatusText(item.status)}
+                    อาคาร {String(item.location.building).replace(/building/i, "")} : {getStatusText(item.status)}
                 </p>
 
                 <p className="mt-2 text-sm md:text-base font-medium text-[#1d1d1d]">
